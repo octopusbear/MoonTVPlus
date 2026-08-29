@@ -48,6 +48,14 @@ jobs:
             sed -i 's/REPLACE_WITH_YOUR_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g' wrangler.toml
             echo "D1 Database ID replaced successfully"
           fi
+          if [ -n "${{ secrets.USERNAME }}" ]; then
+            sed -i 's/REPLACE_WITH_USERNAME/${{ secrets.USERNAME }}/g' wrangler.toml
+            echo "USERNAME replaced successfully"
+          fi
+          if [ -n "${{ secrets.PASSWORD }}" ]; then
+            sed -i 's/REPLACE_WITH_PASSWORD/${{ secrets.PASSWORD }}/g' wrangler.toml
+            echo "PASSWORD replaced successfully"
+          fi
 
       - name: Build for Cloudflare
         run: pnpm build:cloudflare
