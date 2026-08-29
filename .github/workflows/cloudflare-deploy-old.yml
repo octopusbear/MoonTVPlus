@@ -1,0 +1,60 @@
+name: Deploy to Cloudflare (Old Account)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cloudflare Pages (Old Account)
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Set environment variables
+        run: |
+          echo "BUILD_TARGET=cloudflare" >> $GITHUB_ENV
+          echo "NODE_ENV=production" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_STORAGE_TYPE=${{ secrets.NEXT_PUBLIC_STORAGE_TYPE }}" >> $GITHUB_ENV
+          echo "USERNAME=${{ secrets.OLD_CF_USERNAME }}" >> $GITHUB_ENV
+          echo "PASSWORD=${{ secrets.OLD_CF_PASSWORD }}" >> $GITHUB_ENV
+
+      - name: Configure D1 Database in wrangler.toml
+        run: |
+          sed -i 's/REPLACE_WITH_YOUR_D1_DATABASE_ID/${{ secrets.OLD_CF_D1_DATABASE_ID }}/g' wrangler.toml
+          sed -i 's/REPLACE_WITH_USERNAME/${{ secrets.OLD_CF_USERNAME }}/g' wrangler.toml
+          sed -i 's/REPLACE_WITH_PASSWORD/${{ secrets.OLD_CF_PASSWORD }}/g' wrangler.toml
+          echo "Configuration replaced successfully"
+
+      - name: Build for Cloudflare
+        run: pnpm build:cloudflare
+
+      - name: Deploy to Cloudflare
+        run: |
+          npm install -g wrangler
+          wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.OLD_CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.OLD_CF_ACCOUNT_ID }}
